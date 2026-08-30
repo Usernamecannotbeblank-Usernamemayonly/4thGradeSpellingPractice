@@ -46,16 +46,12 @@
             margin-bottom: 1.5rem;
         }
 
-        .week-select {
-            margin-bottom: 1.5rem;
-            text-align: left;
-        }
-
         label {
             display: block;
             font-weight: 600;
             margin-bottom: 0.5rem;
             font-size: 0.9rem;
+            text-align: left;
         }
 
         select, input[type="text"] {
@@ -66,6 +62,7 @@
             font-size: 1rem;
             box-sizing: border-box;
             outline: none;
+            margin-bottom: 1rem;
             transition: border-color 0.2s;
         }
 
@@ -73,9 +70,7 @@
             border-color: var(--primary);
         }
 
-        .game-area {
-            display: none;
-        }
+        .game-area { display: none; }
 
         .stats {
             display: flex;
@@ -88,39 +83,35 @@
             font-size: 0.9rem;
         }
 
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
         button {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
             border-radius: 0.5rem;
             cursor: pointer;
             font-weight: 600;
             width: 100%;
-            margin-top: 0.5rem;
             transition: background-color 0.2s;
         }
 
-        button:hover {
-            background-color: var(--primary-hover);
-        }
+        button:hover { background-color: var(--primary-hover); }
 
-        .btn-secondary {
-            background-color: #4b5563;
-        }
-        .btn-secondary:hover {
-            background-color: #374151;
-        }
+        .btn-secondary { background-color: #4b5563; }
+        .btn-secondary:hover { background-color: #374151; }
 
-        .speaker-btn {
-            background-color: #10b981;
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-        }
-        .speaker-btn:hover {
-            background-color: #059669;
-        }
+        .speaker-btn { background-color: #10b981; }
+        .speaker-btn:hover { background-color: #059669; }
+        
+        .sentence-btn { background-color: #0284c7; }
+        .sentence-btn:hover { background-color: #0369a1; }
 
         #feedback {
             margin-top: 1rem;
@@ -138,8 +129,10 @@
     <h1>🐝 Spelling Bee Practice</h1>
     <div class="subtitle">4th Grade Master Spelling List</div>
 
-    <!-- Setup Screen -->
-    <div id="setup-screen" class="week-select">
+    <div id="setup-screen">
+        <label for="voiceSelect">Select Voice (Choose a clear one!):</label>
+        <select id="voiceSelect"></select>
+
         <label for="weekSelect">Choose a Week:</label>
         <select id="weekSelect">
             <option value="1">Week 1</option>
@@ -154,20 +147,22 @@
         <button onclick="startQuiz()">Start Practice</button>
     </div>
 
-    <!-- Quiz Screen -->
     <div id="quiz-screen" class="game-area">
         <div class="stats">
             <span id="progress-text">Word 1 of 20</span>
             <span id="score-text">Score: 0</span>
         </div>
 
-        <button class="speaker-btn" onclick="speakCurrentWord()">🔊 Listen to Word</button>
+        <div class="button-group">
+            <button class="speaker-btn" onclick="speakAudio(currentWord)">🔊 Word</button>
+            <button class="sentence-btn" onclick="speakSentence()">📝 Sentence</button>
+        </div>
 
-        <div style="margin-bottom: 1rem;">
+        <div>
             <input type="text" id="userAnswer" placeholder="Type your spelling here..." autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
 
-        <button onclick="submitAnswer()">Submit Answer</button>
+        <button onclick="submitAnswer()" style="margin-bottom: 0.5rem;">Submit Answer</button>
         <button class="btn-secondary" onclick="skipWord()">Skip / Reveal</button>
 
         <div id="feedback"></div>
@@ -175,7 +170,33 @@
 </div>
 
 <script>
-    // Complete word database transcribed from your sheet
+    // Load Voices
+    let voices = [];
+    function populateVoiceList() {
+        voices = window.speechSynthesis.getVoices();
+        const voiceSelect = document.getElementById('voiceSelect');
+        voiceSelect.innerHTML = '';
+        
+        // Filter for English voices to keep the list clean
+        const englishVoices = voices.filter(voice => voice.lang.includes('en'));
+        
+        englishVoices.forEach((voice) => {
+            const option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            option.value = voice.name;
+            // Pre-select highly rated standard voices if available
+            if (voice.name.includes('Google US') || voice.name.includes('Zira') || voice.name.includes('Samantha')) {
+                option.selected = true;
+            }
+            voiceSelect.appendChild(option);
+        });
+    }
+    
+    populateVoiceList();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
     const spellingData = {
         1: ["high", "every", "near", "said", "does", "between", "own", "below", "country", "school", "light", "thought", "bright", "rough", "few", "always", "beginning", "while", "along", "close"],
         2: ["father", "except", "head", "under", "different", "example", "those", "group", "straight", "something", "important", "until", "children", "began", "white", "night", "carrying", "without", "second"],
@@ -187,6 +208,18 @@
         8: ["table", "north", "slowly", "money", "farther", "pulled", "draw", "voice", "seen", "during", "better", "whole", "notice", "ground", "dessert", "ankle", "knuckle", "scissors", "trample", "explain"]
     };
 
+    // Dictionary for context sentences
+    const sentences = {
+        "high": "The bird flew high in the sky.", "every": "I brush my teeth every day.", "near": "The park is near our house.", "said": "She said it was time to go.", "does": "How does this machine work?", "between": "I sat between my two best friends.", "own": "I clean my own room.", "below": "The submarine dove below the surface.", "country": "We live in a beautiful country.", "school": "It is time to go to school.", "light": "Please turn on the light.", "thought": "I thought it was going to rain.", "bright": "The sun is very bright today.", "rough": "The tree bark feels rough.", "few": "I only have a few dollars left.", "always": "Always look both ways before crossing.", "beginning": "That was just the beginning of the story.", "while": "We waited a long while.", "along": "Sing along with the music.", "close": "Please close the front door.",
+        "father": "My father taught me how to ride a bike.", "except": "Everyone went except me.", "head": "Wear a hat on your head.", "under": "The monster is under the bed.", "different": "These two apples look different.", "example": "Can you give me an example?", "those": "Put those boxes over there.", "group": "A group of kids played soccer.", "straight": "Draw a straight line.", "something": "I need something to drink.", "important": "It is important to study.", "until": "We will wait until dark.", "children": "The children laughed loudly.", "began": "It began to snow.", "white": "The clouds are fluffy and white.", "night": "The stars come out at night.", "carrying": "He is carrying a heavy backpack.", "without": "I like my sandwich without mustard.", "second": "Wait just one second.",
+        "once": "I visited that museum once.", "hear": "Did you hear that loud noise?", "idea": "That is a brilliant idea.", "enough": "We have enough pizza for everyone.", "watch": "Let's watch a movie tonight.", "almost": "We are almost at the finish line.", "real": "Is that a real diamond?", "sometimes": "Sometimes I like to read in bed.", "mountain": "They climbed the steep mountain.", "young": "The young puppy was very playful.", "talk": "We need to talk about your grades.", "being": "Thank you for being so helpful.", "leave": "Don't leave your jacket at the park.", "family": "My family is going on vacation.", "it's": "It's going to be a great day.", "music": "I love listening to upbeat music.", "color": "Blue is my favorite color.", "question": "Raise your hand to ask a question.", "horse": "She learned how to ride a horse.", "problem": "That math problem was difficult.",
+        "usually": "I usually eat cereal for breakfast.", "didn't": "I didn't know the answer.", "friends": "My friends and I built a fort.", "heard": "I heard a dog barking.", "order": "What did you order for lunch?", "door": "Knock on the door before entering.", "sure": "Are you sure you want to go?", "become": "A caterpillar will become a butterfly.", "muffin": "I baked a blueberry muffin.", "pumpkin": "We carved a spooky pumpkin.", "apron": "The chef wore a white apron.", "poison": "Don't touch that poison ivy.", "landform": "A valley is a type of landform.", "across": "Look both ways before walking across the street.", "during": "No talking during the movie.", "however": "I want to go, however, I have homework.", "dental": "I have a dental checkup tomorrow.", "habitat": "The jungle is a monkey's habitat.", "camouflage": "The lizard uses camouflage to hide.", "hibernate": "Bears hibernate in the winter.",
+        "hour": "The game lasted for one hour.", "black": "The black cat crossed the road.", "happened": "What happened to your bicycle?", "whole": "I ate the whole apple.", "measure": "Use a ruler to measure the paper.", "remember": "Do you remember my name?", "early": "We have to wake up early tomorrow.", "neighbor": "Our neighbor has a friendly dog.", "reached": "She reached the top of the climbing wall.", "vocal": "Singers have to protect their vocal cords.", "listen": "Please listen carefully to the instructions.", "piece": "Can I have a piece of pie?", "heaven": "The stars look beautiful in the heaven.", "oxen": "The pioneers used oxen to pull their wagons.", "knew": "I knew the right answer.", "careful": "Be careful crossing the icy street.", "questions": "Does anyone have any questions?", "complete": "Please complete your assignment.",
+        "loose": "I have a loose tooth.", "several": "I read several books this summer.", "all right": "Everything is going to be all right.", "himself": "He built the robot all by himself.", "toward": "Walk toward the front of the room.", "fragile": "Be careful with that fragile glass vase.", "mobile": "My parents bought a new mobile phone.", "evil": "The evil villain was defeated by the hero.", "depend": "I depend on my alarm clock to wake up.", "natural": "A waterfall is a beautiful natural wonder.", "border": "We crossed the border into Canada.", "desert": "Cactus plants grow in the dry desert.", "certain": "Are you certain that is correct?", "fountain": "I took a drink from the water fountain.", "bargain": "That jacket was a great bargain.", "orphan": "The orphan animal was rescued.", "measure": "Use a ruler to measure the paper.",
+        "lose": "Don't lose your car keys.", "morning": "I eat breakfast in the morning.", "passed": "The parade passed right by our house.", "vowel": "The letter A is a vowel.", "true": "Is that story true or false?", "hundred": "There are one hundred pennies in a dollar.", "thousand": "The stadium holds over ten thousand people.", "again": "Let's ride the roller coaster again.", "pattern": "The tiger has a striped pattern.", "address": "What is your home address?", "fatal": "The poison can be fatal to small bugs.", "oval": "An egg has an oval shape.", "royal": "The royal family lives in the castle.", "chapel": "They got married in a small chapel.", "climate": "Penguins live in a cold climate.", "eight": "A spider has eight legs.", "inverse": "Subtraction is the inverse of addition.", "population": "The city has a large population.", "county": "We live in Davis county.",
+        "table": "Set the plates on the table.", "north": "Geese fly north in the spring.", "slowly": "The turtle walks very slowly.", "money": "Save your money in a piggy bank.", "farther": "I threw the ball farther than my brother.", "pulled": "He pulled the heavy wagon up the hill.", "draw": "I like to draw with crayons.", "voice": "Please use your indoor voice.", "seen": "Have you seen my missing shoe?", "better": "I hope you feel better soon.", "notice": "Did you notice the new painting?", "ground": "The apple fell to the ground.", "dessert": "We had chocolate cake for dessert.", "ankle": "I twisted my ankle playing soccer.", "knuckle": "He scraped his knuckle on the brick wall.", "scissors": "Use scissors to cut the paper.", "trample": "Please don't trample the flowers.", "explain": "Can you explain how this works?"
+    };
+
     let currentWeekList = [];
     let currentIndex = 0;
     let score = 0;
@@ -195,10 +228,7 @@
     function startQuiz() {
         const week = document.getElementById('weekSelect').value;
         currentWeekList = [...spellingData[week]];
-        
-        // Shuffle the words for a fun challenge each time
         currentWeekList.sort(() => Math.random() - 0.5);
-
         currentIndex = 0;
         score = 0;
 
@@ -217,29 +247,42 @@
             document.getElementById('feedback').innerText = '';
             document.getElementById('userAnswer').focus();
 
-            // Automatically speak the word when loaded
-            speakCurrentWord();
+            speakAudio(currentWord);
         } else {
             showFinalScore();
         }
     }
 
-    function speakCurrentWord() {
+    // Core function to speak text using the selected voice
+    function speakAudio(textToSpeak) {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // Stop any previous audio
-            const utterance = new SpeechSynthesisUtterance(currentWord);
-            utterance.rate = 0.9; // Slightly slower for clarity
+            window.speechSynthesis.cancel(); 
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.rate = 0.85; 
+            
+            const selectedVoiceName = document.getElementById('voiceSelect').value;
+            const selectedVoice = voices.find(v => v.name === selectedVoiceName);
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
             window.speechSynthesis.speak(utterance);
         } else {
             alert("Text-to-speech not supported in this browser.");
         }
     }
 
-    // Allow pressing 'Enter' to submit
-    document.getElementById('userAnswer').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            submitAnswer();
+    // Looks up the sentence or uses a fallback
+    function speakSentence() {
+        let sentenceText = sentences[currentWord.toLowerCase()];
+        if (!sentenceText) {
+            sentenceText = `The word is ${currentWord}. Please spell the word ${currentWord}.`;
         }
+        speakAudio(sentenceText);
+    }
+
+    document.getElementById('userAnswer').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') submitAnswer();
     });
 
     function submitAnswer() {
@@ -255,7 +298,7 @@
             setTimeout(loadNextWord, 1200);
         } else {
             feedbackEl.innerHTML = `<span class="incorrect">Incorrect. Try listening and spelling it again!</span>`;
-            speakCurrentWord();
+            speakAudio(currentWord);
             document.getElementById('userAnswer').focus();
             document.getElementById('userAnswer').select();
         }
