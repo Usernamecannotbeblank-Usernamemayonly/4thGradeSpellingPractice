@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4th Grade Spelling Practice</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f0fdf4;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #15803d;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .subtitle {
+            color: #4b5563;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .week-select {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        .game-area {
+            display: none;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f3f4f6;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #4b5563;
+        }
+        .btn-secondary:hover {
+            background-color: #374151;
+        }
+
+        .speaker-btn {
+            background-color: #10b981;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .speaker-btn:hover {
+            background-color: #059669;
+        }
+
+        #feedback {
+            margin-top: 1rem;
+            font-weight: bold;
+            min-height: 1.5rem;
+        }
+
+        .correct { color: #16a34a; }
+        .incorrect { color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🐝 Spelling Bee Practice</h1>
+    <div class="subtitle">4th Grade Master Spelling List</div>
+
+    <!-- Setup Screen -->
+    <div id="setup-screen" class="week-select">
+        <label for="weekSelect">Choose a Week:</label>
+        <select id="weekSelect">
+            <option value="1">Week 1</option>
+            <option value="2">Week 2</option>
+            <option value="3">Week 3</option>
+            <option value="4">Week 4</option>
+            <option value="5">Week 5</option>
+            <option value="6">Week 6</option>
+            <option value="7">Week 7</option>
+            <option value="8">Week 8</option>
+        </select>
+        <button onclick="startQuiz()">Start Practice</button>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div id="quiz-screen" class="game-area">
+        <div class="stats">
+            <span id="progress-text">Word 1 of 20</span>
+            <span id="score-text">Score: 0</span>
+        </div>
+
+        <button class="speaker-btn" onclick="speakCurrentWord()">🔊 Listen to Word</button>
+
+        <div style="margin-bottom: 1rem;">
+            <input type="text" id="userAnswer" placeholder="Type your spelling here..." autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+
+        <button onclick="submitAnswer()">Submit Answer</button>
+        <button class="btn-secondary" onclick="skipWord()">Skip / Reveal</button>
+
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<script>
+    // Complete word database transcribed from your sheet
+    const spellingData = {
+        1: ["high", "every", "near", "said", "does", "between", "own", "below", "country", "school", "light", "thought", "bright", "rough", "few", "always", "beginning", "while", "along", "close"],
+        2: ["father", "except", "head", "under", "different", "example", "those", "group", "straight", "something", "important", "until", "children", "began", "white", "night", "carrying", "without", "second"],
+        3: ["once", "hear", "idea", "enough", "watch", "almost", "real", "sometimes", "mountain", "young", "talk", "being", "leave", "family", "it's", "music", "color", "question", "horse", "problem"],
+        4: ["usually", "didn't", "friends", "heard", "order", "door", "sure", "become", "muffin", "pumpkin", "apron", "poison", "landform", "across", "during", "however", "dental", "habitat", "camouflage", "hibernate"],
+        5: ["hour", "black", "happened", "whole", "measure", "remember", "early", "neighbor", "reached", "vocal", "listen", "piece", "heaven", "oxen", "knew", "careful", "problem", "music", "questions", "complete"],
+        6: ["loose", "several", "all right", "himself", "toward", "fragile", "mobile", "evil", "depend", "natural", "border", "desert", "certain", "fountain", "bargain", "orphan", "piece", "become", "remember", "measure"],
+        7: ["lose", "morning", "passed", "vowel", "true", "hundred", "thousand", "again", "pattern", "address", "fatal", "oval", "royal", "chapel", "climate", "eight", "inverse", "population", "county"],
+        8: ["table", "north", "slowly", "money", "farther", "pulled", "draw", "voice", "seen", "during", "better", "whole", "notice", "ground", "dessert", "ankle", "knuckle", "scissors", "trample", "explain"]
+    };
+
+    let currentWeekList = [];
+    let currentIndex = 0;
+    let score = 0;
+    let currentWord = "";
+
+    function startQuiz() {
+        const week = document.getElementById('weekSelect').value;
+        currentWeekList = [...spellingData[week]];
+        
+        // Shuffle the words for a fun challenge each time
+        currentWeekList.sort(() => Math.random() - 0.5);
+
+        currentIndex = 0;
+        score = 0;
+
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+
+        loadNextWord();
+    }
+
+    function loadNextWord() {
+        if (currentIndex < currentWeekList.length) {
+            currentWord = currentWeekList[currentIndex];
+            document.getElementById('progress-text').innerText = `Word ${currentIndex + 1} of ${currentWeekList.length}`;
+            document.getElementById('score-text').innerText = `Score: ${score}`;
+            document.getElementById('userAnswer').value = '';
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('userAnswer').focus();
+
+            // Automatically speak the word when loaded
+            speakCurrentWord();
+        } else {
+            showFinalScore();
+        }
+    }
+
+    function speakCurrentWord() {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Stop any previous audio
+            const utterance = new SpeechSynthesisUtterance(currentWord);
+            utterance.rate = 0.9; // Slightly slower for clarity
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert("Text-to-speech not supported in this browser.");
+        }
+    }
+
+    // Allow pressing 'Enter' to submit
+    document.getElementById('userAnswer').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            submitAnswer();
+        }
+    });
+
+    function submitAnswer() {
+        const userGuess = document.getElementById('userAnswer').value.trim().toLowerCase();
+        const feedbackEl = document.getElementById('feedback');
+
+        if (!userGuess) return;
+
+        if (userGuess === currentWord.toLowerCase()) {
+            feedbackEl.innerHTML = `<span class="correct">Correct! 🎉</span>`;
+            score++;
+            currentIndex++;
+            setTimeout(loadNextWord, 1200);
+        } else {
+            feedbackEl.innerHTML = `<span class="incorrect">Incorrect. Try listening and spelling it again!</span>`;
+            speakCurrentWord();
+            document.getElementById('userAnswer').focus();
+            document.getElementById('userAnswer').select();
+        }
+    }
+
+    function skipWord() {
+        const feedbackEl = document.getElementById('feedback');
+        feedbackEl.innerHTML = `<span class="incorrect">The correct spelling was: <b>${currentWord}</b></span>`;
+        currentIndex++;
+        setTimeout(loadNextWord, 2500);
+    }
+
+    function showFinalScore() {
+        document.getElementById('quiz-screen').innerHTML = `
+            <h2>Practice Complete! 🌟</h2>
+            <p style="font-size: 1.2rem; margin: 1.5rem 0;">You scored <b>${score}</b> out of <b>${currentWeekList.length}</b>!</p>
+            <button onclick="location.reload()">Practice Again</button>
+        `;
+    }
+</script>
+
+</body>
+</html>
